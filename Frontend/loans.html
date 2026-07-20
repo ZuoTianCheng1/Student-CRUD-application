@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loans</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background: linear-gradient(135deg, #eef2f7, #e4ebf5);
+            color: #2d3436;
+        }
+        .container {
+            max-width: 920px;
+            margin: auto;
+            background: white;
+            padding: 28px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #1f2d3d;
+            letter-spacing: 0.3px;
+        }
+        .meta {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .meta .pill {
+            background: #2f6fed;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .meta a {
+            color: #2f6fed;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .meta a:hover { text-decoration: underline; }
+
+        form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            background: #f7f9fc;
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid #e6ebf2;
+        }
+        form input, form select {
+            padding: 10px 12px;
+            flex: 1;
+            min-width: 170px;
+            border: 1px solid #d7dee8;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #fff;
+            transition: border-color 0.15s ease;
+        }
+        form input:focus, form select:focus {
+            outline: none;
+            border-color: #2f6fed;
+        }
+        form button {
+            padding: 10px 22px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.1s ease, background 0.15s ease;
+        }
+        form button:hover { background-color: #22913c; transform: translateY(-1px); }
+
+        .btn-view {
+            background-color: #2f6fed;
+            color: #fff;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-view:hover { background-color: #2559c4; }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: #fff;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-secondary:hover { background-color: #5a6268; }
+
+        h3 { color: #1f2d3d; margin-bottom: 10px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #edf0f5;
+            text-align: left;
+            font-size: 14px;
+        }
+        th {
+            background-color: #1f2d3d;
+            color: white;
+            font-weight: 600;
+            font-size: 12.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        tbody tr:hover { background-color: #f7f9fc; }
+        .empty { color: #9aa4b2; font-style: italic; text-align: center; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.Pending    { background: #fff3cd; color: #92720d; }
+        .badge.Approved   { background: #d4edda; color: #1e7e34; }
+        .badge.Disbursed  { background: #d6e6ff; color: #1a53c4; }
+
+        .btn-payments {
+            background-color: #17c1c1;
+            color: #fff;
+            border: none;
+            padding: 7px 14px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .btn-payments:hover { background-color: #12a3a3; }
+
+        .summary {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+        }
+        .summary .card {
+            flex: 1;
+            min-width: 200px;
+            padding: 16px 18px;
+            border-radius: 10px;
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+        .summary .card .label {
+            font-size: 12px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .summary .card .value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+        .summary .paid { background: linear-gradient(135deg, #28a745, #1e8838); }
+        .summary .remaining { background: linear-gradient(135deg, #dc3545, #b8283a); }
+
+        #paymentsSection { display: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div id="loansSection">
+        <h2>Student Loans</h2>
+
+        <div class="meta">
+            <div><span class="pill" id="studentPill">Student ID: -</span></div>
+            <div>
+                <button class="btn-view" type="button" onclick="fetchLoans()">View</button>
+                <a href="index.html" style="margin-left:12px;">&larr; Back</a>
+            </div>
+        </div>
+
+        <form id="loanForm">
+            <input type="hidden" id="studentId" />
+            <input type="number" id="amount" placeholder="Amount" step="0.01" min="0" required />
+
+            <select id="loan_type" required>
+                <option value="">Select Loan Type</option>
+                <option value="Tuition">Tuition</option>
+                <option value="Books">Books</option>
+                <option value="Living Expenses">Living Expenses</option>
+            </select>
+
+            <select id="status" required>
+                <option value="">Select Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Disbursed">Disbursed</option>
+            </select>
+
+            <button type="submit">Add Loan</button>
+        </form>
+
+        <h3>Existing Loans</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th><th>Amount</th><th>Loan Type</th><th>Status</th><th>Created At</th><th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="loanTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="paymentsSection">
+        <h2>Loan Payments</h2>
+
+        <div class="meta">
+            <div><span class="pill" id="loanPill">Loan ID: -</span></div>
+            <div>
+                <button class="btn-view" type="button" onclick="fetchPayments()">View</button>
+                <button class="btn-secondary" type="button" onclick="backToLoans()" style="margin-left:12px;">&larr; Back to Loans</button>
+            </div>
+        </div>
+
+        <div class="summary">
+            <div class="card paid">
+                <div class="label">Total Paid</div>
+                <div class="value" id="totalPaid">0.00</div>
+            </div>
+            <div class="card remaining">
+                <div class="label">Remaining Balance</div>
+                <div class="value" id="remainingBalance">0.00</div>
+            </div>
+        </div>
+
+        <form id="paymentForm">
+            <input type="hidden" id="loanId" />
+            <input type="number" id="payment_amount" placeholder="Payment Amount" step="0.01" min="0" required />
+            <input type="date" id="payment_date" required />
+
+            <select id="payment_method" required>
+                <option value="">Select Payment Method</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Online Payment">Online Payment</option>
+            </select>
+
+            <button type="submit">Add Payment</button>
+        </form>
+
+        <h3>Payment History</h3>
+        <table>
+            <thead>
+            <tr><th>ID</th><th>Amount</th><th>Date</th><th>Method</th></tr>
+            </thead>
+            <tbody id="paymentTableBody"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = 'api.php';
+    const loanForm = document.getElementById('loanForm');
+    const paymentForm = document.getElementById('paymentForm');
+    let loanAmount = 0;
+
+    function getQueryParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const studentId = getQueryParam('studentId');
+        if (!studentId) {
+            alert('Missing studentId in query string.');
+            return;
+        }
+        document.getElementById('studentId').value = studentId;
+        document.getElementById('studentPill').innerText = `Student ID: ${studentId}`;
+        fetchLoans();
+    });
+
+    loanForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const studentId = document.getElementById('studentId').value;
+        const amount = document.getElementById('amount').value;
+        const loan_type = document.getElementById('loan_type').value;
+        const status = document.getElementById('status').value;
+
+        if (!studentId) { alert('Missing studentId.'); return; }
+
+        const payload = { student_id: studentId, amount, loan_type, status };
+
+        const response = await fetch(`${API_URL}?action=loans_create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        alert(result.message || result.error);
+
+        document.getElementById('amount').value = '';
+        fetchLoans();
+    });
+
+    async function fetchLoans() {
+        const studentId = document.getElementById('studentId').value;
+        if (!studentId) return;
+
+        const response = await fetch(`${API_URL}?action=loans_list&studentId=${encodeURIComponent(studentId)}`);
+        const loans = await response.json();
+
+        const tbody = document.getElementById('loanTableBody');
+        tbody.innerHTML = '';
+
+        if (!loans || loans.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty">No loans for this student.</td></tr>`;
+            return;
+        }
+
+        loans.forEach(loan => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${loan.id}</td>
+                    <td>${loan.amount}</td>
+                    <td>${loan.loan_type}</td>
+                    <td><span class="badge ${loan.status}">${loan.status}</span></td>
+                    <td>${loan.created_at}</td>
+                    <td><button class="btn-payments" onclick="viewPayments(${loan.id}, ${loan.amount})">Payments</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function viewPayments(loanId, amount) {
+        loanAmount = parseFloat(amount) || 0;
+        document.getElementById('loanId').value = loanId;
+        document.getElementById('loanPill').innerText = `Loan ID: ${loanId} (Amount: ${loanAmount.toFixed(2)})`;
+
+        document.getElementById('loansSection').style.display = 'none';
+        document.getElementById('paymentsSection').style.display = 'block';
+
+        fetchPayments();
+    }
+
+    function backToLoans() {
+        document.getElementById('paymentsSection').style.display = 'none';
+        document.getElementById('loansSection').style.display = 'block';
+    }
+
+    paymentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const loanId = document.getElementById('loanId').value;
+        const payment_amount = document.getElementById('payment_amount').value;
+        const payment_date = document.getElementById('payment_date').value;
+        const payment_method = document.getElementById('payment_method').value;
+
+        if (!loanId) { alert('Missing loanId.'); return; }
+
+        const payload = { loan_id: loanId, payment_amount, payment_date, payment_method };
+
+        const response = await fetch(`${API_URL}?action=payments_create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        alert(result.message || result.error);
+
+        document.getElementById('payment_amount').value = '';
+        document.getElementById('payment_date').value = '';
+        fetchPayments();
+    });
+
+    async function fetchPayments() {
+        const loanId = document.getElementById('loanId').value;
+        if (!loanId) return;
+
+        const response = await fetch(`${API_URL}?action=payments_list&loanId=${encodeURIComponent(loanId)}`);
+        const payments = await response.json();
+
+        const tbody = document.getElementById('paymentTableBody');
+        tbody.innerHTML = '';
+
+        if (!payments || payments.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="empty">No payments recorded for this loan.</td></tr>`;
+            updateSummary(0);
+            return;
+        }
+
+        let totalPaid = 0;
+        payments.forEach(payment => {
+            totalPaid += parseFloat(payment.payment_amount);
+            tbody.innerHTML += `
+                <tr>
+                    <td>${payment.id}</td>
+                    <td>${payment.payment_amount}</td>
+                    <td>${payment.payment_date}</td>
+                    <td>${payment.payment_method}</td>
+                </tr>
+            `;
+        });
+
+        updateSummary(totalPaid);
+    }
+
+    function updateSummary(totalPaid) {
+        const remaining = loanAmount - totalPaid;
+        document.getElementById('totalPaid').innerText = totalPaid.toFixed(2);
+        document.getElementById('remainingBalance').innerText = remaining.toFixed(2);
+    }
+</script>
+</body>
+</html>
