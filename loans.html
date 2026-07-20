@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loans</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { text-align: center; }
+        .meta { margin-bottom: 16px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .meta .pill { background:#007bff; color:#fff; padding:6px 10px; border-radius:999px; font-size:14px; }
+
+        form { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        form input, form select { padding: 10px; flex: 1; min-width: 180px; border: 1px solid #ccc; border-radius: 4px; }
+        form button { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-view { background-color: #007bff; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        .empty { color:#666; font-style:italic; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Student Loans</h2>
+
+    <div class="meta">
+        <div><span class="pill" id="studentPill">Student ID: -</span></div>
+        <div>
+            <button class="btn-view" type="button" onclick="fetchLoans()">View</button>
+            <a href="index.html" style="margin-left:12px;">&larr; Back</a>
+        </div>
+    </div>
+
+    <form id="loanForm">
+        <input type="hidden" id="studentId" />
+
+        <input type="number" id="amount" placeholder="Amount" step="0.01" min="0" required />
+
+        <select id="loan_type" required>
+            <option value="">Select Loan Type</option>
+            <option value="Tuition">Tuition</option>
+            <option value="Books">Books</option>
+            <option value="Living Expenses">Living Expenses</option>
+        </select>
+
+        <select id="status" required>
+            <option value="">Select Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Disbursed">Disbursed</option>
+        </select>
+
+        <button type="submit">Add Loan</button>
+    </form>
+
+    <h3>Existing Loans</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Amount</th>
+            <th>Loan Type</th>
+            <th>Status</th>
+            <th>Created At</th>
+        </tr>
+        </thead>
+        <tbody id="loanTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+    const API_URL = 'api.php';
+
+    const form = document.getElementById('loanForm');
+
+    function getQueryParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const studentId = getQueryParam('studentId');
+        if (!studentId) {
+            alert('Missing studentId in query string.');
+            return;
+        }
+
+        document.getElementById('studentId').value = studentId;
+        document.getElementById('studentPill').innerText = `Student ID: ${studentId}`;
+
+        fetchLoans();
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const studentId = document.getElementById('studentId').value;
+        const amount = document.getElementById('amount').value;
+        const loan_type = document.getElementById('loan_type').value;
+        const status = document.getElementById('status').value;
+
+        if (!studentId) {
+            alert('Missing studentId.');
+            return;
+        }
+
+        const payload = { student_id: studentId, amount, loan_type, status };
+
+        const response = await fetch(`${API_URL}?action=loans_create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        alert(result.message || result.error);
+
+        // reset minimal fields (keep selects)
+        document.getElementById('amount').value = '';
+
+        fetchLoans();
+    });
+
+    async function fetchLoans() {
+        const studentId = document.getElementById('studentId').value;
+        if (!studentId) return;
+
+        const response = await fetch(`${API_URL}?action=loans_list&studentId=${encodeURIComponent(studentId)}`);
+        const loans = await response.json();
+
+        const tbody = document.getElementById('loanTableBody');
+        tbody.innerHTML = '';
+
+        if (!loans || loans.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty">No loans for this student.</td></tr>`;
+            return;
+        }
+
+        loans.forEach(loan => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${loan.id}</td>
+                    <td>${loan.amount}</td>
+                    <td>${loan.loan_type}</td>
+                    <td>${loan.status}</td>
+                    <td>${loan.created_at}</td>
+                </tr>
+            `;
+        });
+    }
+</script>
+</body>
+</html>
+
