@@ -1,41 +1,39 @@
 <?php
 /**
- * Simple CRUD API for managing students in a school database.
- * 
- * This API supports the following operations:
- * - GET: Retrieve all students
- * - POST: Add a new student
- * - PUT: Update an existing student
- * - DELETE: Remove a student
- * 
- * The API returns JSON responses and handles CORS for cross-origin requests.
+ * Complete CRUD & Loan/Payment Management API
+ * Configured specifically for school_db.sql schema
  */
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type");
 
-$host = "db";
+// Update host, user, and pass according to your environment (XAMPP default: root / no password)
+$host = "localhost";
 $user = "root"; 
 $pass = "rootpassword"; 
 $dbname = "school_db";
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass); // Create a new PDO instance for database connection
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Set error mode to exception for better error handling
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    // Handle connection error and return a JSON response with an error message
     echo json_with_code(["error" => "Connection failed: " . $e->getMessage()], 500);
     exit;
 }
 
-$method = $_SERVER['REQUEST_METHOD']; // Get the HTTP request method
-
-// Handle the request based on the HTTP method
-// HTTP methods are used to perform different operations on the server. Each case corresponds to a CRUD operation.
-// Optional, query-string based sub-router for loans
+$method = $_SERVER['REQUEST_METHOD'];
 $action = isset($_GET['action']) ? $_GET['action'] : null;
 
+// Helper function to return JSON with dynamic HTTP status code
+function json_with_code($data, $code) {
+    http_response_code($code);
+    return json_encode($data);
+}
+
+// -------------------------------------------------------------
+// 1. LOANS MANAGEMENT ENDPOINTS
+// -------------------------------------------------------------
 if ($action === 'loans_list' && $method === 'GET') {
     $studentId = isset($_GET['studentId']) ? $_GET['studentId'] : null;
     if (empty($studentId)) {
@@ -68,15 +66,53 @@ if ($action === 'loans_create' && $method === 'POST') {
     exit;
 }
 
+// -------------------------------------------------------------
+// 2. PAYMENTS MANAGEMENT ENDPOINTS
+// -------------------------------------------------------------
+if ($action === 'payments_list' && $method === 'GET') {
+    $loanId = isset($_GET['loanId']) ? $_GET['loanId'] : null;
+    if (empty($loanId)) {
+        echo json_with_code(["error" => "loanId required"], 400);
+        exit;
+    }
+
+    // Alias 'amount' as 'payment_amount' so loans.html JavaScript reads it correctly!
+    $stmt = $pdo->prepare("SELECT id, loan_id, amount AS payment_amount, payment_date, payment_method, created_at FROM payments WHERE loan_id = ? ORDER BY id DESC");
+    $stmt->execute([$loanId]);
+    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    exit;
+}
+
+if ($action === 'payments_create' && $method === 'POST') {
+    $data = json_decode(file_get_contents("php://input"), true);
+    if (empty($data['loan_id']) || empty($data['payment_amount']) || empty($data['payment_date']) || empty($data['payment_method'])) {
+        echo json_with_code(["error" => "loan_id, payment_amount, payment_date, payment_method are required"], 400);
+        exit;
+    }
+
+    // Maps payload key 'payment_amount' to SQL column 'amount'
+    $stmt = $pdo->prepare("INSERT INTO payments (loan_id, amount, payment_date, payment_method) VALUES (?, ?, ?, ?)");
+    $stmt->execute([
+        $data['loan_id'],
+        $data['payment_amount'],
+        $data['payment_date'],
+        $data['payment_method']
+    ]);
+
+    echo json_encode(["message" => "Payment recorded successfully!"]);
+    exit;
+}
+
+// -------------------------------------------------------------
+// 3. MAIN STUDENT CRUD ENDPOINTS
+// -------------------------------------------------------------
 switch ($method) {
     case 'GET':
-        // READ: Get all students
         $stmt = $pdo->query("SELECT * FROM students ORDER BY id DESC");
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         break;
 
     case 'POST':
-        // CREATE: Add a new student
         $data = json_decode(file_get_contents("php://input"), true);
         if (!empty($data['name']) && !empty($data['email']) && !empty($data['course'])) {
             $stmt = $pdo->prepare("INSERT INTO students (name, email, course) VALUES (?, ?, ?)");
@@ -92,7 +128,6 @@ switch ($method) {
         break;
 
     case 'PUT':
-        // UPDATE: Modify an existing student
         $data = json_decode(file_get_contents("php://input"), true);
         if (!empty($data['id']) && !empty($data['name']) && !empty($data['email']) && !empty($data['course'])) {
             $stmt = $pdo->prepare("UPDATE students SET name = ?, email = ?, course = ? WHERE id = ?");
@@ -109,7 +144,6 @@ switch ($method) {
         break;
 
     case 'DELETE':
-        // DELETE: Remove a student
         $data = json_decode(file_get_contents("php://input"), true);
         if (!empty($data['id'])) {
             $stmt = $pdo->prepare("DELETE FROM students WHERE id = ?");
@@ -123,17 +157,5 @@ switch ($method) {
     default:
         echo json_with_code(["error" => "Method not allowed"], 405);
         break;
-}
-
-/**
- * Helper function to return JSON response with a specific HTTP status code.
- *
- * @param array $data The data to be returned as JSON.
- * @param int $code The HTTP status code to set for the response.
- * @return string JSON encoded data.
- */
-function json_with_code($data, $code) {
-    http_response_code($code);
-    return json_encode($data);
 }
 ?>
